@@ -1,0 +1,413 @@
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-iscsi-photoprism-db
+  labels:
+    app: photoprism-db
+spec:
+  storageClassName: "freenas-iscsi-manual-csi"
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  csi:
+    driver: org.democratic-csi.node-manual
+    readOnly: false
+    fsType: xfs
+    volumeHandle: pv-iscsi-photoprism-db
+    volumeAttributes:
+      portal: storage-server-lagg.lan:3260
+      iqn: iqn.2005-10.org.freenas.ctl:photoprism-db
+      lun: "0"
+      node_attach_driver: iscsi
+      provisioner_driver: node-manual
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-iscsi-photoprism-storage
+  labels:
+    app: photoprism-db
+spec:
+  storageClassName: "freenas-iscsi-manual-csi"
+  capacity:
+    storage: 600Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  csi:
+    driver: org.democratic-csi.node-manual
+    readOnly: false
+    fsType: xfs
+    volumeHandle: pv-iscsi-photoprism-storage
+    volumeAttributes:
+      portal: storage-server-lagg.lan:3260
+      iqn: iqn.2005-10.org.freenas.ctl:photoprism-storage
+      lun: "0"
+      node_attach_driver: iscsi
+      provisioner_driver: node-manual
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-nfs-photoprism-originals
+spec:
+  storageClassName: "freenas-nfs-manual-csi"
+  capacity:
+    storage: 600Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - nfsvers=4
+    - nolock
+    - noatime
+  csi:
+    driver: org.democratic-csi.node-manual
+    readOnly: false
+    fsType: nfs
+    volumeHandle: pv-nfs-photoprism-originals
+    volumeAttributes:
+      server: storage-server-lagg.lan
+      share: /mnt/r10_8tb/coen/pictures_and_videos/assets
+      node_attach_driver: nfs
+      provisioner_driver: node-manual
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-nfs-photoprism-import
+spec:
+  storageClassName: "freenas-nfs-manual-csi"
+  capacity:
+    storage: 600Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - nfsvers=4
+    - nolock
+    - noatime
+  csi:
+    driver: org.democratic-csi.node-manual
+    readOnly: false
+    fsType: nfs
+    volumeHandle: pv-nfs-photoprism-import
+    volumeAttributes:
+      server: storage-server-lagg.lan
+      share: /mnt/r10_8tb/coen/pictures_and_videos/import
+      node_attach_driver: nfs
+      provisioner_driver: node-manual
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-iscsi-photoprism-db
+  namespace: tools
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "freenas-iscsi-manual-csi"
+spec:
+  storageClassName: freenas-iscsi-manual-csi
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: pv-iscsi-photoprism-db
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-iscsi-photoprism-storage
+  namespace: tools
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "freenas-iscsi-manual-csi"
+spec:
+  storageClassName: freenas-iscsi-manual-csi
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: pv-iscsi-photoprism-storage
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-nfs-photoprism-originals
+  namespace: tools
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "freenas-nfs-manual-csi"
+spec:
+  storageClassName: freenas-nfs-manual-csi
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 600Gi
+  volumeName: pv-nfs-photoprism-originals
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-nfs-photoprism-import
+  namespace: tools
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "freenas-nfs-manual-csi"
+spec:
+  storageClassName: freenas-nfs-manual-csi
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 600Gi
+  volumeName: pv-nfs-photoprism-import
+
+---
+kind: SealedSecret
+apiVersion: bitnami.com/v1alpha1
+metadata:
+  name: photoprism-secret-env
+  namespace: tools
+spec:
+  encryptedData:
+    MYSQL_ROOT_PASSWORD: AgArRzer9qVxWee09QX+JEj8ddOXqTIJsa2BVFFNgKjReA/2R5ZrCY+FQ/B5QDbi13amC+zaE1Tw/PiuAdXyd5/mVfxvyOed7+t+rr2rOS0ieWJMOo6lqCj7lDgPwSKiLIVGt0vtVPLZtpV9UMYPX94hGFNeqqdXR3LiNQWiVqsaGlHb/CsfSzAXIzn1wF5On9uPZleMX/fNgaUA0RM4A2L22R4VeZxy/NYvhcpY1mLqmYgcQgkA+fbOLs6N33WKkB7WGaZm74pUBYjOBVjetNVLzjuyTuPcsUlQiC92ZhxRjI8EOAFzD6Iyv5KUw/a6HO81uDpA6Pb+Z29YMhW9NAKm3tWb6t0Bb8w/GJL9F5WsYb/8G+Vu0ZMX+QKMQ2hmSZqbzxKvG15wH/HDO1fceLhwwaE/0EnrewD25lrLBbMPxnzNnrDsZaHN1IrFcwR2mU+3yhWGyDmopxrdVuPCBZfGppq5gPvEhFc/y0U7C886u+QDLZbjuyIY4I8gJcgTaZGKJ9rvWaHzZtb8BKTfgtW5VL/4nF+jQbulJeCn6NKOhEOfTfGFHBhlB9a8hXqinQWPYiLQk8hMshw24aZNzGbq8x52baD5V+zWxmt5Qz3gmg+sjWsf5Inp6rv71kOGjBO1QzNPdgbksDgnKu5mImi0NnFoJ5hWtmUfbZ8PIzmFa3SgZ3MZUH2gUWJ+iIXPOKjhe2IHRtMm5XMtwYg=
+    PHOTOPRISM_ADMIN_PASSWORD: AgAonrHxYwgqMsj4j0Pp66/2JOiFV2KbcO67ux6Q09dJEw1hmIXJpy3GhUQbUqU8V/2FKccEpLpCWhUPbBbW43Q9JuGDD3yuerGVzeSVjCgi8Ng05au7xg9WiX1uydXmdFb+jBwmHMqlo6BxOtvOE65piemUW+RA2PgVEOJGmIlN4xZhpiWrAR83j2ibvKt4JDN81Jg8RdsmvcWQ4iv5/99zi9pyGYlubCeJA5oBm49cZLyv9kLUGsz4tY6Dga3DKMg0nCuiKUkUny55U6gzCDw/exBYoFdehlwLncOtwt+94gKAkOI7r+TqT13MG2XcSfgrAOypqgs18MYbl1km23tsb8bgr9mMcwGm0PZFUXT+8MJlgHknFkArh37xJRQ6JBrRsCJtp87VysFaB3b3llrQJjDZrcaAFxLv41t53QeeV0LyTifC+sQLnoh0FnZraWTdxusI77zN6JOV76wQF00eU9xANEwMp9MXPwsqJEW97SN52/6WPr/VAASzGogxamAQf6h7qlcAjDdJOyhEd9/gJ5p7tRIotq+i4FX0SGqTLLAHTOMMpszmd1R9nxMBeK88BaKIt3GW6JuJq9jozEj5LGza6KzukgY2Wfb0Gl2iuQG351eRtCRxeb4AvsnwwKBQr7vkcADgnEaBVAL2OrJugZWP7g9uwZd+IiCG86ry6wQhzKdt0W4cznm4dM4HO/+jez3xV39TjX8vdfYekeD02Cgs
+    PHOTOPRISM_DATABASE_PASSWORD: AgBUqJYOre4T6N1OJZ7PGweJ7JOXc23RP+UfbDVQ1m70rvIWsRxRaTaKU1lN6unh0Sdw7+3vVrvh+EAAdun1gg7d705lkczGhrb+gm8EwzG669+7JQpyC+kp6X9Uoli+PAC4vpUvyVj2Cn5eCvyEwaE22j0dyLiVQzSy9nAu2ljRD041fyPy09+nbuz3ScVMnhVnwmAkq8jXl3M9SrsysWmmZ3YvbeErPxTxR1u+56zcDSC7r0eUEBBtqZCbyTbOIC0yYl103xZYdanzhzXTKletfodeEE6Sx7BpgbF0TC3kOApGv0n+2+cUYFJdms9QdJvNAavYGRKi6sp5xUXrX6rUGnh+N5yC5j2OotaKc2qx3Z0/ZvjbYaHuHz/putwPZw1ydq5GgKwE9wzXMk7sDeTrufIfFKOBA59Yqipl8E+42qh2MH1S1PRAvHKgxC8colzfFqoSg2nN4QQH364ROQEeYPRfDWu5z2AlBbx6MzG8NWADTUe7GyR1fghMJC2ZRVpuYi4cqVKuPsmoVLy2Fey5W/qI4/qDqIZdX1vHdzp7Q6ICjRClOC3aSMD5+JHJJawi+eIGeVJIA1tCYElBEH5DVn8OkcYAmwLhp+eRolakzb2uLGUXY25+ivEfiyrnlbITn/Gxi1obTSg0PhKKc/N7tz0i/fj1zUhJLrJKoa1Oc4K9BCE4JDdeABwRhhV1p+M6KVlBhX3U+ApdqjnU
+    PHOTOPRISM_DATABASE_USER: AgDyZlBIsW9rlItRqLCRGqH7xNfChHsYjzPXjT6SZNvxnI68cShOVTY6q4UKeyJ6qyLk/f9NPUz1hsWvDqZP3652VbA04qamjTqUsRIhJk+voXTFGny8gAxtiWRWQAR7EO0ZeXiZAiHMnHVCuiiDMlLDRU7cod1fYImgdOwiI0HkcapwN9EyasEiJkAAy+c6FHSe4oHk0dQApT/f5BigEBB1Y/sVOnUkT/N8F+quDaQ6BWF7rEifoRBdz72nyy9c5UkKVuuHmeQ8quQasEV0cjZAy0ozXWa8juDTnDVcom5iUCAwNY8edzvd2fF9uSd0O3rQceIeDfez0FHcIRQ1v1HClZNwGV4mwsr06+DdKLCpsT3sjdwJ4yOU2sFCxM2+69X81tK3MuQLOGldBM6ieI8LPvkMQZImqCeHChFMAruS6q4AlD3pgxsPmCyHRjOQ19TIplkeZ8ilG10ogdv08AQZZ4TWvTGTEbQWz2fmFdbfv8IepoA+8lJ3Br/k06n+NKkdxow8QwNrA3zjsBUW5APqSw7wl5gyh5BEo0CM2we0uuOh/cdZUxMdo07rBPwoBPl5OVAvUvc4lX5+1dNyNy70IK5KJ8H0KVv3oKJ2K7viJf1vUr+1Eonhfv59AmLjrr0G+GzYQb87x3wIkabmflvt/luJIFwtTb2XHUt83Hn3F6vwtOtlDeA3Pd/QVn4u2dcQ1UlkKGjNvk1i
+  template:
+    metadata:
+      name: photoprism-secret-env
+      namespace: tools
+      labels:
+        app: photoprism
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: photoprism-env
+  namespace: tools
+  labels:
+    app: photoprism
+data:
+  HOME: "/photoprism"
+  PHOTOPRISM_DARKTABLE_PRESETS: "false"
+  PHOTOPRISM_DATABASE_DRIVER: "mysql"
+  PHOTOPRISM_DATABASE_NAME: "photoprism"
+  PHOTOPRISM_DATABASE_SERVER: "photoprism-db.tools.svc.cluster.local:3306"
+  PHOTOPRISM_DEBUG: "true"
+  PHOTOPRISM_DETECT_NSFW: "false"
+  PHOTOPRISM_DISABLE_CHOWN: "false"
+  PHOTOPRISM_DISABLE_CLASSIFICATION: "false"
+  PHOTOPRISM_DISABLE_FACES: "false"
+  PHOTOPRISM_DISABLE_SETTINGS: "false"
+  PHOTOPRISM_DISABLE_TENSORFLOW: "false"
+  PHOTOPRISM_DISABLE_WEBDAV: "false"
+  PHOTOPRISM_DISABLE_FFMPEG: "false"
+  PHOTOPRISM_DISABLE_DARKTABLE: "false"
+  PHOTOPRISM_DISABLE_RAWTHERAPEE: "false"
+  PHOTOPRISM_DISABLE_RAW: "false"
+  PHOTOPRISM_EXPERIMENTAL: "false"
+  PHOTOPRISM_HTTP_COMPRESSION: gzip
+  PHOTOPRISM_ORIGINALS_LIMIT: "50000"
+  PHOTOPRISM_PUBLIC: "false"
+  PHOTOPRISM_READONLY: "false"
+  PHOTOPRISM_SITE_AUTHOR: ""
+  PHOTOPRISM_SITE_CAPTION: Browse Your Life
+  PHOTOPRISM_SITE_DESCRIPTION: ""
+  PHOTOPRISM_SITE_TITLE: PhotoPrism
+  PHOTOPRISM_SITE_URL: http://localhost:2342/
+  PHOTOPRISM_UPLOAD_NSFW: "true"
+  PHOTOPRISM_WORKERS: "4"
+  PHOTOPRISM_UID: "1000"
+  PHOTOPRISM_GID: "1000"
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: photoprism-db
+  namespace: tools
+  labels:
+    app: photoprism-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: photoprism-db
+  template:
+    metadata:
+      labels:
+        app: photoprism-db
+    spec:
+      containers:
+        - name: photoprism-db
+          image: "harbor.k8s.lan/dockerhub-proxy/mariadb:10.10"
+          resources: {}
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: photoprism-env
+                  key: PHOTOPRISM_DATABASE_NAME
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: photoprism-secret-env
+                  key: PHOTOPRISM_DATABASE_PASSWORD
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: photoprism-secret-env
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: photoprism-secret-env
+                  key: PHOTOPRISM_DATABASE_USER
+          args:
+            - mysqld
+            - --innodb-buffer-pool-size=128M
+            - --transaction-isolation=READ-COMMITTED
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
+            - --max-connections=512
+            - --innodb-rollback-on-timeout=OFF
+            - --innodb-lock-wait-timeout=120
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pvc-iscsi-photoprism-db
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: photoprism
+  namespace: tools
+  labels:
+    app: photoprism
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: photoprism
+  template:
+    metadata:
+      labels:
+        app: photoprism
+    spec:
+      containers:
+        - name: photoprism
+          image: "harbor.k8s.lan/dockerhub-proxy/photoprism/photoprism:latest"
+          resources: {}
+          env:
+            - name: PHOTOPRISM_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: photoprism-secret-env
+                  key: PHOTOPRISM_ADMIN_PASSWORD
+            - name: PHOTOPRISM_DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: photoprism-secret-env
+                  key: PHOTOPRISM_DATABASE_USER
+            - name: PHOTOPRISM_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: photoprism-secret-env
+                  key: PHOTOPRISM_DATABASE_PASSWORD
+          envFrom:
+            - configMapRef:
+                name: photoprism-env
+                optional: false
+          ports:
+            - containerPort: 2342
+          volumeMounts:
+            - name: photoprism-storage
+              mountPath: /photoprism/storage
+            - name: photoprism-originals
+              mountPath: /photoprism/originals
+            - name: photoprism-import
+              mountPath: /photoprism/import
+      volumes:
+        - name: photoprism-storage
+          persistentVolumeClaim:
+            claimName: pvc-iscsi-photoprism-storage
+        - name: photoprism-originals
+          persistentVolumeClaim:
+            claimName: pvc-nfs-photoprism-originals
+        - name: photoprism-import
+          persistentVolumeClaim:
+            claimName: pvc-nfs-photoprism-import
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: photoprism-db
+  namespace: tools
+  labels:
+    app: photoprism-db
+spec:
+  selector:
+    app: photoprism-db
+  type: ClusterIP
+  ports:
+    - port: 3306
+      targetPort: 3306
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: photoprism
+  namespace: tools
+  labels:
+    app: photoprism
+spec:
+  selector:
+    app: photoprism
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 2342
+
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: photoprism
+  namespace: tools
+  labels:
+    app: photoprism
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 512m
+spec:
+  ingressClassName: nginx-private
+  rules:
+    - host: photos.k8s.lan
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: photoprism
+                port:
+                  number: 80
